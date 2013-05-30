@@ -94,7 +94,7 @@ optional arguments:
                         (default: 0.75)
   -e EPSILON            score improvement threshold to include new model
                         (default: 0.0001)
-  -t TEST_SIZE          fraction of data to use for testing (default: 0.5)
+  -t TEST_SIZE          fraction of data to use for testing (default: 0.95)
   -s SEED               random seed
   -v                    show progress messages
 ```

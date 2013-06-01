@@ -122,8 +122,6 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
         # clip away from extremes to avoid under/overflows
         probs = np.clip(probs, 0.00001, 0.99999, probs)
 
-        #return -np.mean(np.sum(y_bin * np.log(probs), axis=1)
-        #+ np.sum((1-y_bin)*np.log(1.0-probs), axis=1))
         return -np.mean(np.sum(y_bin * np.log(probs), axis=1))
 
     def _acc(y, y_bin, probs):
@@ -497,7 +495,6 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
         for i in xrange(self.n_bags):
             # get bag_size elements at random
             cand_indices = rs.permutation(n_models)[:bag_size]
-            #cand_indices = sorted(rs.permutation(n_models)[:bag_size])
 
             # sort by rank
             candidates = [ranked_model_scores[ci][0] for ci in cand_indices]

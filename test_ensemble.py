@@ -355,10 +355,12 @@ def main():
     report = classification_report(y_test, preds)
     print('\n Test set classification report for best model:\n%s' % report)
 
-    score = ens.score(X_train, y_train)
+    preds = ens.predict(X_train)
+    score = accuracy_score(y_train, preds)
     print('\nTrain set score from final ensemble: %.5f' % score)
 
-    score = ens.score(X_test, y_test)
+    preds = ens.predict(X_test)
+    score = accuracy_score(y_test, preds)
     print(' Test set score from final ensemble: %.5f' % score)
 
     report = classification_report(y_test, preds)

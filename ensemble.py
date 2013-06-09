@@ -41,39 +41,48 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
     Parameters:
     -----------
     `db_name` : string
-        Name of file for sqlite db backing store
+        Name of file for sqlite db backing store.
 
     `models` : list or None
         List of classifiers following sklearn fit/predict API, if None
-        fitted models are loaded from the specified database
+        fitted models are loaded from the specified database.
 
     `n_best` : int (default: 5)
-        Number of top models in initial ensemble
+        Number of top models in initial ensemble.
 
     `n_folds` : int (default: 3)
-        Number of internal cross-validation folds
+        Number of internal cross-validation folds.
 
     `bag_fraction` : float (default: 0.25)
-        Fraction of (post-pruning) models to randomly select for each bag
+        Fraction of (post-pruning) models to randomly select for each bag.
 
     `prune_fraction` : float (default: 0.8)
-        Fraction of worst models to prune before ensemble selection
+        Fraction of worst models to prune before ensemble selection.
 
     `score_metric` : string (default: 'accuracy')
         Score metric to use when hillclimbing.  Must be one of
         'accuracy', 'xentropy', 'rmse', 'f1'.
 
     `epsilon` : float (default: 0.01)
-        Minimum score improvement to add model to ensemble
+        Minimum score improvement to add model to ensemble.  Ignored
+        if use_epsilon is False.
 
     `max_models` : int (default: 50)
+        Maximum number of models to include in an ensemble.
 
     `verbose` : boolean (default: False)
-        Turn on verbose messages
+        Turn on verbose messages.
+
+    `use_epsilon` : boolean (default: False)
+        If True, candidates models are added to ensembles until the value
+        of the score_metric fails to improve by the value of the epsilon
+        parameter.  If False, models are added until the number of models
+        in the cadidate ensemble reaches the value of the max_models
+        parameter.
 
     `random_state`  : int, RandomState instance or None (default=None)
         Control the pseudo random number generator used to select
-        candidates for each bag
+        candidates for each bag.
 
     References
     ----------
@@ -147,7 +156,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
                  prune_fraction=0.8,
                  score_metric='accuracy',
                  epsilon=0.01, max_models=50,
-                 verbose=False,
+                 use_epsilon=False, verbose=False,
                  random_state=None):
 
         self.db_name = db_name
@@ -160,6 +169,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
         self.score_metric = score_metric
         self.epsilon = epsilon
         self.max_models = max_models
+        self.use_epsilon = use_epsilon
         self.verbose = verbose
         self.random_state = random_state
 
@@ -385,7 +395,10 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
         ensemble_score = self._get_ensemble_score(db_conn, ensemble, y, y_bin)
         if (self.verbose):
             ensemble_count = sum(ensemble.values())
-            sys.stderr.write('%d/%.3f ' % (ensemble_count, ensemble_score))
+            sys.stderr.write('%02d/%.3f ' % (ensemble_count, ensemble_score))
+
+        if (not self.use_epsilon):
+            cand_ensembles = []
 
         last_ensemble_score = -100.0
         while(ensemble_count < self.max_models):
@@ -400,23 +413,34 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
             last_ensemble_score = ensemble_score
             ensemble_score = new_scores[0]['score']
 
-            # if score improvement is less than epsilon,
-            # don't add the new model and stop
-            score_diff = ensemble_score - last_ensemble_score
-            if (score_diff < self.epsilon):
-                break
+            if (self.use_epsilon):
+                # if score improvement is less than epsilon,
+                # don't add the new model and stop
+                score_diff = ensemble_score - last_ensemble_score
+                if (score_diff < self.epsilon):
+                    break
 
             ensemble.update({new_scores[0]['new_idx']: 1})
+
+            if (not self.use_epsilon):
+                # store current ensemble to select best later
+                ensemble_copy = Counter(ensemble)
+                cand = {'ens': ensemble_copy, 'score': ensemble_score}
+                cand_ensembles.append(cand)
 
             ensemble_count = sum(ensemble.values())
             if (self.verbose):
                 if ((ensemble_count - self.n_best) % 8 == 0):
                     sys.stderr.write("\n         ")
-                msg = '%d/%.3f ' % (ensemble_count, ensemble_score)
+                msg = '%02d/%.3f ' % (ensemble_count, ensemble_score)
                 sys.stderr.write(msg)
 
         if (self.verbose):
             sys.stderr.write('\n')
+
+        if (not self.use_epsilon and ensemble_count == self.max_models):
+            cand_ensembles.sort(key=lambda x: x['score'], reverse=True)
+            ensemble = cand_ensembles[0]['ens']
 
         return ensemble
 

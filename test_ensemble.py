@@ -281,6 +281,10 @@ def parse_args():
     parser.add_argument('-p', dest='prune_fraction', type=float,
                         help=help_fmt, default=0.75)
 
+    help_fmt = 'use epsilon to stop adding models %s' % dflt_fmt
+    parser.add_argument('-u', dest='use_epsilon', action='store_true',
+                        help=help_fmt, default=False)
+
     help_fmt = 'score improvement threshold to include new model %s' % dflt_fmt
     parser.add_argument('-e', dest='epsilon', type=float,
                         help=help_fmt, default=0.0001)
@@ -334,6 +338,7 @@ def main():
         'score_metric': res.score_metric,
         'verbose': res.verbose,
         'epsilon': res.epsilon,
+        'use_epsilon': res.use_epsilon,
         'max_models': res.max_models,
         'random_state': res.seed,
     }

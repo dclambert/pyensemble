@@ -1,7 +1,7 @@
 pyensemble v0.1
 ===============
 
-######An implementation of [Caruana et al's Ensemble Selection algorithm] (http://www.cs.cornell.edu/~caruana/ctp/ct.papers/caruana.icml04.icdm06long.pdf) [1][2] in Python, based on scikit-learn.
+######An implementation of [Caruana et al's Ensemble Selection algorithm] (http://www.cs.cornell.edu/~caruana/ctp/ct.papers/caruana.icml04.icdm06long.pdf) in Python, based on scikit-learn.
 
 ######From the abstract:
 
@@ -38,12 +38,12 @@ model ids and weightings for the final ensemble.
 
 Hillclimbing can be performed using accuracy, rmse, cross entropy or F1 score.
 
-If the object is initialized with the _models_ parameter equal to None, the object tries to load
+If the object is initialized with the _model_ parameter equal to None, the object tries to load
 a fitted ensemble from the database specified.
 
 ####__test_ensemble.py__
 
-A test harness to run ensemble selection on the [Letter][let_id] dataset.  The letter identification
+A test harness to run ensemble selection on the [Letter](http://archive.ics.uci.edu/ml/datasets/Letter+Recognition) dataset.  The letter identification
 problem is reduced to a binary problem by dividing the alphabet in half.
 
 The user can choose from the following candidate models:
@@ -94,12 +94,10 @@ optional arguments:
                         (default: 0.75)
   -e EPSILON            score improvement threshold to include new model
                         (default: 0.0001)
-  -t TEST_SIZE          fraction of data to use for testing (default: 0.95)
+  -t TEST_SIZE          fraction of data to use for testing (default: 0.5)
   -s SEED               random seed
   -v                    show progress messages
 ```
-
-[let_id]:<http://archive.ics.uci.edu/ml/datasets/Letter+Recognition>
 
 
 Requirements

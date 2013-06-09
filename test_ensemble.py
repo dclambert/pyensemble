@@ -302,7 +302,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def main():
+if (__name__ == '__main__'):
     res = parse_args()
 
     data = load_data(res.test_size, random_state=res.seed)
@@ -370,6 +370,3 @@ def main():
 
     report = classification_report(y_test, preds)
     print('\n Test set classification report for final ensemble:\n%s' % report)
-
-if (__name__ == '__main__'):
-    main()

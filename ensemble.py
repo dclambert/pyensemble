@@ -30,9 +30,41 @@ from collections import Counter
 
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils import check_random_state
-from sklearn.metrics import mean_squared_error, accuracy_score, f1_score
+from sklearn.metrics import f1_score, auc_score
+from sklearn.metrics import mean_squared_error, accuracy_score
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.preprocessing import LabelBinarizer
+
+
+def _f1(y, y_bin, probs):
+    """return f1 score"""
+    return f1_score(y, np.argmax(probs, axis=1))
+
+
+def _auc(y, y_bin, probs):
+    """return AUC score (for binary problems only)"""
+    return auc_score(y, probs[:, 1])
+
+
+def _rmse(y, y_bin, probs):
+    """return 1-rmse since we're maximizing the score for hillclimbing"""
+    return 1.0 - sqrt(mean_squared_error(y_bin, probs))
+
+
+def _accuracy(y, y_bin, probs):
+    """return accuracy score"""
+    return accuracy_score(y, np.argmax(probs, axis=1))
+
+
+def _mxentropy(y, y_bin, probs):
+    """return negative mean cross entropy since we're maximizing the score
+    for hillclimbing"""
+
+    # clip away from extremes to avoid under/overflows
+    probs = np.clip(probs, 0.00001, 0.99999, probs)
+    probs /= probs.sum(axis=1)[:, np.newaxis]
+
+    return (y_bin * np.log(probs)).sum() / y.shape[0]
 
 
 class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
@@ -119,35 +151,12 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
         );
     """
 
-    def _rmse(y, y_bin, probs):
-        """return 1-rmse since we're maximizing the score for hillclimbing"""
-
-        return 1.0 - sqrt(mean_squared_error(y_bin, probs))
-
-    def _mxe(y, y_bin, probs):
-        """return negative mean cross entropy since we're maximizing the score
-        for hillclimbing"""
-
-        # clip away from extremes to avoid under/overflows
-        probs = np.clip(probs, 0.00001, 0.99999, probs)
-
-        return -np.mean(np.sum(y_bin * np.log(probs), axis=1))
-
-    def _acc(y, y_bin, probs):
-        """return accuracy score"""
-
-        return accuracy_score(y, np.argmax(probs, axis=1))
-
-    def _f1(y, y_bin, probs):
-        """return f1 score"""
-
-        return f1_score(y, np.argmax(probs, axis=1))
-
     _metrics = {
         'f1': _f1,
+        'auc': _auc,
         'rmse': _rmse,
-        'accuracy': _acc,
-        'xentropy': _mxe,
+        'accuracy': _accuracy,
+        'xentropy': _mxentropy,
     }
 
     def __init__(self, db_name=None,
@@ -195,8 +204,9 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
             msg = "epsilon must be >= 0.0"
             raise ValueError(msg)
 
-        if (self.score_metric not in self._metrics.keys()):
-            msg = "score_metric not in 'accuracy', 'xentropy', 'rmse', 'f1'"
+        metric_names = self._metrics.keys()
+        if (self.score_metric not in metric_names):
+            msg = "score_metric not in %s" % metric_names
             raise ValueError(msg)
 
         if (self.n_best < 1):
@@ -207,6 +217,10 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
             msg = "max_models must be >= n_best"
             raise ValueError(msg)
 
+        if (self.n_folds < 2):
+            msg = "n_folds must be >= 2"
+            raise ValueError(msg)
+
     def _init_db(self, models):
         """Initialize database"""
 
@@ -214,7 +228,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
             # nuke old database
             try:
                 os.remove(self.db_name)
-            except OSError, e:
+            except OSError:
                 pass
 
         db_conn = sqlite3.connect(self.db_name)
@@ -259,6 +273,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
 
         self.fit_models(X, y)
         self.build_ensemble(X, y)
+        return self
 
     def fit_models(self, X, y):
         """Perform internal cross-validation fit"""
@@ -281,6 +296,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
             curs.execute(select_stmt, [model_idx])
             pickled_model = curs.fetchone()[0]
             model = loads(str(pickled_model))
+
             model_folds = []
 
             for fold_idx, fold in enumerate(self._folds):
@@ -377,68 +393,98 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
                          from model_scores
                          where model_idx in %s"""
 
-        curs.execute(select_stmt % str(tuple(ensemble)))
+        in_str = str(tuple(ensemble)).replace(',)', ')')
+        curs.execute(select_stmt % in_str)
 
         for row in curs.fetchall():
             model_idx, probs = row
             probs = loads(str(probs))
             weight = ensemble[model_idx]
-            ensemble_probs += probs * weight/n_models
+            ensemble_probs += probs * weight
+
+        ensemble_probs /= n_models
 
         score = self._metric(y, y_bin, ensemble_probs)
-        return score
+        return score, ensemble_probs
 
-    def _ensemble_from_candidates(self, db_conn, candidates, X, y, y_bin):
+    def _score_with_model(self, db_conn, y, y_bin, probs, n_models, model_idx):
+        curs = db_conn.cursor()
+        select_stmt = """select probs
+                         from model_scores
+                         where model_idx = %d"""
+
+        curs.execute(select_stmt % model_idx)
+        row = curs.fetchone()
+
+        n_models = float(n_models)
+        new_probs = loads(str(row[0]))
+        new_probs = (probs*n_models + new_probs)/(n_models + 1.0)
+
+        score = self._metric(y, y_bin, new_probs)
+        return score, new_probs
+
+    def _ensemble_from_candidates(self, db_conn, candidates, y, y_bin):
         """Build an ensemble from a list of candidate models"""
 
         ensemble = Counter(candidates[:self.n_best])
-        ensemble_score = self._get_ensemble_score(db_conn, ensemble, y, y_bin)
+
+        ens_score, ens_probs = self._get_ensemble_score(db_conn,
+                                                        ensemble,
+                                                        y, y_bin)
+
+        ens_count = sum(ensemble.values())
         if (self.verbose):
-            ensemble_count = sum(ensemble.values())
-            sys.stderr.write('%02d/%.3f ' % (ensemble_count, ensemble_score))
+            sys.stderr.write('%02d/%.3f ' % (ens_count, ens_score))
 
         if (not self.use_epsilon):
             cand_ensembles = []
 
-        last_ensemble_score = -100.0
-        while(ensemble_count < self.max_models):
+        last_ens_score = -100.0
+        while(ens_count < self.max_models):
             new_scores = []
-            for model_idx in candidates:
-                ens = ensemble + Counter({model_idx: 1})
-                score = self._get_ensemble_score(db_conn, ens, y, y_bin)
-                new_scores.append({'new_idx': model_idx, 'score': score})
+            for new_model_idx in candidates:
+                score, _ = self._score_with_model(db_conn, y, y_bin,
+                                                  ens_probs, ens_count,
+                                                  new_model_idx)
+
+                new_scores.append({'score': score,
+                                   'new_model_idx': new_model_idx})
 
             new_scores.sort(key=lambda x: x['score'], reverse=True)
 
-            last_ensemble_score = ensemble_score
-            ensemble_score = new_scores[0]['score']
+            last_ens_score = ens_score
+            ens_score = new_scores[0]['score']
 
             if (self.use_epsilon):
                 # if score improvement is less than epsilon,
                 # don't add the new model and stop
-                score_diff = ensemble_score - last_ensemble_score
+                score_diff = ens_score - last_ens_score
                 if (score_diff < self.epsilon):
                     break
 
-            ensemble.update({new_scores[0]['new_idx']: 1})
+            new_model_idx = new_scores[0]['new_model_idx']
+            ensemble.update({new_model_idx: 1})
+            _, ens_probs = self._score_with_model(db_conn, y, y_bin,
+                                                  ens_probs, ens_count,
+                                                  new_model_idx)
 
             if (not self.use_epsilon):
                 # store current ensemble to select best later
-                ensemble_copy = Counter(ensemble)
-                cand = {'ens': ensemble_copy, 'score': ensemble_score}
+                ens_copy = Counter(ensemble)
+                cand = {'ens': ens_copy, 'score': ens_score}
                 cand_ensembles.append(cand)
 
-            ensemble_count = sum(ensemble.values())
+            ens_count = sum(ensemble.values())
             if (self.verbose):
-                if ((ensemble_count - self.n_best) % 8 == 0):
+                if ((ens_count - self.n_best) % 8 == 0):
                     sys.stderr.write("\n         ")
-                msg = '%02d/%.3f ' % (ensemble_count, ensemble_score)
+                msg = '%02d/%.3f ' % (ens_count, ens_score)
                 sys.stderr.write(msg)
 
         if (self.verbose):
             sys.stderr.write('\n')
 
-        if (not self.use_epsilon and ensemble_count == self.max_models):
+        if (not self.use_epsilon and ens_count == self.max_models):
             cand_ensembles.sort(key=lambda x: x['score'], reverse=True)
             ensemble = cand_ensembles[0]['ens']
 
@@ -483,6 +529,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
         db_conn = sqlite3.connect(self.db_name)
         curs = db_conn.cursor()
 
+        # binarize
         if (self._n_classes > 2):
             y_bin = LabelBinarizer().fit_transform(y)
         else:
@@ -515,6 +562,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
 
         ensembles = []
 
+        # make bags and ensembles
         rs = check_random_state(self.random_state)
         for i in xrange(self.n_bags):
             # get bag_size elements at random
@@ -529,7 +577,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
             # build an ensemble with current candidates
             ensemble = self._ensemble_from_candidates(db_conn,
                                                       candidates,
-                                                      X, y, y_bin)
+                                                      y, y_bin)
             ensembles.append(ensemble)
 
         # combine ensembles from each bag
@@ -543,7 +591,10 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
             db_conn.executemany(insert_stmt, val_gen)
 
         if (self.verbose):
-            score = self._get_ensemble_score(db_conn, self._ensemble, y, y_bin)
+            score, _ = self._get_ensemble_score(db_conn,
+                                                self._ensemble,
+                                                y, y_bin)
+
             fmt = "\nFinal ensemble (%d components) CV score: %.5f\n\n"
 
             sys.stderr.write(fmt % (sum(self._ensemble.values()), score))
@@ -559,8 +610,8 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
                          from fitted_models
                          where model_idx = ? and fold_idx = ?"""
 
+        # average probs over each n_folds models
         probs = np.zeros((len(X), self._n_classes))
-
         for fold_idx in xrange(self.n_folds):
             curs.execute(select_stmt, [model_idx, fold_idx])
 

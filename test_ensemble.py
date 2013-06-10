@@ -254,7 +254,7 @@ def parse_args():
 
     help_fmt = 'scoring metric used for hillclimbing %s' % dflt_fmt
     parser.add_argument('-S', dest='score_metric',
-                        choices=['accuracy', 'rmse', 'xentropy', 'f1'],
+                        choices=['f1', 'auc', 'rmse', 'accuracy', 'xentropy'],
                         help=help_fmt,  default='accuracy')
 
     parser.add_argument('-b', dest='n_bags', type=int,
@@ -362,11 +362,11 @@ if (__name__ == '__main__'):
 
     preds = ens.predict(X_train)
     score = accuracy_score(y_train, preds)
-    print('\nTrain set score from final ensemble: %.5f' % score)
+    print('\nTrain set accuracy from final ensemble: %.5f' % score)
 
     preds = ens.predict(X_test)
     score = accuracy_score(y_test, preds)
-    print(' Test set score from final ensemble: %.5f' % score)
+    print(' Test set accuracy from final ensemble: %.5f' % score)
 
     report = classification_report(y_test, preds)
     print('\n Test set classification report for final ensemble:\n%s' % report)

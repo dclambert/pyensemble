@@ -1,7 +1,7 @@
 pyensemble v0.2
 ===============
 
-######An implementation of [Caruana et al's Ensemble Selection algorithm] (http://www.cs.cornell.edu/~caruana/ctp/ct.papers/caruana.icml04.icdm06long.pdf) in Python, based on scikit-learn.
+######An implementation of [Caruana et al's Ensemble Selection algorithm] (http://www.cs.cornell.edu/~caruana/ctp/ct.papers/caruana.icml04.icdm06long.pdf) in Python, based on [scikit-learn](http://scikit-learn.org).
 
 ######From the abstract:
 
@@ -36,7 +36,7 @@ It uses sqlite as the backing store containing pickled unfitted models, fitted m
 for each internal cross validation fold, scores and predictions for each model, and the list of
 model ids and weightings for the final ensemble.
 
-Hillclimbing can be performed using accuracy, rmse, cross entropy or F1 score.
+Hillclimbing can be performed using auc, accuracy, rmse, cross entropy or F1 score.
 
 If the object is initialized with the _model_ parameter equal to None, the object tries to load
 a fitted ensemble from the database specified.
@@ -67,9 +67,9 @@ Full usage is:
 ```
 usage: test_ensemble.py [-h] -D DB_NAME
                         [-M {svc,sgd,gbc,dtree,forest,extra,kmp} [{svc,sgd,gbc,dtree,forest,extra,kmp} ...]]
-                        [-S {accuracy,rmse,xentropy,f1}] [-b N_BAGS]
+                        [-S {f1,auc,rmse,accuracy,xentropy}] [-b N_BAGS]
                         [-f BAG_FRACTION] [-B N_BEST] [-m MAX_MODELS]
-                        [-F N_FOLDS] [-p PRUNE_FRACTION] [-e EPSILON]
+                        [-F N_FOLDS] [-p PRUNE_FRACTION] [-u] [-e EPSILON]
                         [-t TEST_SIZE] [-s SEED] [-v]
 
 Test EnsembleClassifier
@@ -80,7 +80,7 @@ optional arguments:
   -M {svc,sgd,gbc,dtree,forest,extra,kmp} [{svc,sgd,gbc,dtree,forest,extra,kmp} ...]
                         model types to include as ensemble candidates
                         (default: ['dtree'])
-  -S {accuracy,rmse,xentropy,f1}
+  -S {f1,auc,rmse,accuracy,xentropy}
                         scoring metric used for hillclimbing (default:
                         accuracy)
   -b N_BAGS             bags to create (default: 20)
@@ -92,9 +92,10 @@ optional arguments:
   -F N_FOLDS            internal cross-validation folds (default: 3)
   -p PRUNE_FRACTION     fraction of worst models pruned pre-selection
                         (default: 0.75)
+  -u                    use epsilon to stop adding models (default: False)
   -e EPSILON            score improvement threshold to include new model
                         (default: 0.0001)
-  -t TEST_SIZE          fraction of data to use for testing (default: 0.5)
+  -t TEST_SIZE          fraction of data to use for testing (default: 0.95)
   -s SEED               random seed
   -v                    show progress messages
 ```
@@ -103,7 +104,7 @@ optional arguments:
 Requirements
 ------------
 
-Written using Python 2.7.3, numpy 1.6.1, scipy 0.10.1 and scikit-learn 0.13.1
+Written using Python 2.7.3, numpy 1.6.1, scipy 0.10.1, scikit-learn 0.13.1 and sqlite 3.7.14
 
 
 References

@@ -6,7 +6,7 @@
 The :mod:`ensemble` module implements the ensemble selection
 technique of Caruana et al [1][2].
 
-Currently supports accuracy, rmse, and mean cross entropy scores
+Currently supports f1, auc, rmse, accuracy and mean cross entropy scores
 for hillclimbing.  Based on numpy, scipy, sklearn and sqlite.
 
 Work in progress.

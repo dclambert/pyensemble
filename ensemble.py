@@ -72,7 +72,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
 
     Parameters:
     -----------
-    `db_name` : string
+    `db_file` : string
         Name of file for sqlite db backing store.
 
     `models` : list or None
@@ -159,7 +159,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
         'xentropy': _mxentropy,
     }
 
-    def __init__(self, db_name=None,
+    def __init__(self, db_file=None,
                  models=None, n_best=5, n_folds=3,
                  n_bags=20, bag_fraction=0.25,
                  prune_fraction=0.8,
@@ -168,7 +168,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
                  use_epsilon=False, verbose=False,
                  random_state=None):
 
-        self.db_name = db_name
+        self.db_file = db_file
         self.models = models
         self.n_best = n_best
         self.n_bags = n_bags
@@ -196,8 +196,8 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
         self._init_db(models)
 
     def _check_params(self):
-        if (not self.db_name):
-            msg = "db_name parameter is required"
+        if (not self.db_file):
+            msg = "db_file parameter is required"
             raise ValueError(msg)
 
         if (self.epsilon < 0.0):
@@ -227,11 +227,11 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
         if (models):
             # nuke old database
             try:
-                os.remove(self.db_name)
+                os.remove(self.db_file)
             except OSError:
                 pass
 
-        db_conn = sqlite3.connect(self.db_name)
+        db_conn = sqlite3.connect(self.db_file)
         with db_conn:
             db_conn.execute("pragma journal_mode = off")
 
@@ -279,7 +279,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
         """Perform internal cross-validation fit"""
 
         if (self.verbose):
-            sys.stderr.write('\nfitting models\n')
+            sys.stderr.write('\nfitting models:\n')
 
         self._folds = list(StratifiedKFold(y, n_folds=self.n_folds))
 
@@ -288,7 +288,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
                              (model_idx, fold_idx, pickled_model)
                          values (?,?,?)"""
 
-        db_conn = sqlite3.connect(self.db_name)
+        db_conn = sqlite3.connect(self.db_file)
         curs = db_conn.cursor()
 
         for model_idx in xrange(self._n_models):
@@ -332,7 +332,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
         self._metric = self._metrics[self.score_metric]
 
         if (self.verbose):
-            sys.stderr.write('\nscoring models\n')
+            sys.stderr.write('\nscoring models:\n')
 
         insert_stmt = """insert into model_scores (model_idx, score, probs)
                          values (?,?,?)"""
@@ -508,7 +508,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
     def best_model(self):
         """Returns best model found after CV scoring"""
 
-        db_conn = sqlite3.connect(self.db_name)
+        db_conn = sqlite3.connect(self.db_file)
         _, model = self._get_best_model(db_conn.cursor())
         db_conn.close()
         return model
@@ -526,7 +526,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
 
         self._n_classes = len(np.unique(y))
 
-        db_conn = sqlite3.connect(self.db_name)
+        db_conn = sqlite3.connect(self.db_file)
         curs = db_conn.cursor()
 
         # binarize
@@ -604,7 +604,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
     def _model_predict_proba(self, X, model_idx=0):
         """Get probability predictions for a model given its index"""
 
-        db_conn = sqlite3.connect(self.db_name)
+        db_conn = sqlite3.connect(self.db_file)
         curs = db_conn.cursor()
         select_stmt = """select pickled_model
                          from fitted_models
@@ -628,7 +628,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
         """Probability estimates for all classes (ordered by class label)
         using best model"""
 
-        db_conn = sqlite3.connect(self.db_name)
+        db_conn = sqlite3.connect(self.db_file)
         best_model_idx, _ = self._get_best_model(db_conn.cursor())
         db_conn.close()
 

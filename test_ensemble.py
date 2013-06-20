@@ -67,9 +67,8 @@ from argparse import ArgumentParser
 from sklearn.utils import check_random_state
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
-from sklearn.datasets import fetch_mldata, load_svmlight_file
+from sklearn.datasets import load_svmlight_file
 from sklearn.grid_search import IterGrid
-from sklearn.preprocessing import StandardScaler
 from sklearn.cross_validation import train_test_split
 
 from ensemble import EnsembleSelectionClassifier
@@ -151,10 +150,6 @@ if (__name__ == '__main__'):
     splits = train_test_split(X, y, test_size=res.test_size,
                               random_state=res.seed)
     X_train, X_test, y_train, y_test = splits
-
-    scaler = StandardScaler()
-    X_train = scaler.fit_transform(X_train)
-    X_test = scaler.transform(X_test)
 
     print('Train/hillclimbing set size: %d' % len(X_train))
     print('              Test set size: %d\n' % len(X_test))

@@ -1,4 +1,4 @@
-pyensemble v0.2
+pyensemble v0.3
 ===============
 
 ######An implementation of [Caruana et al's Ensemble Selection algorithm] (http://www.cs.cornell.edu/~caruana/ctp/ct.papers/caruana.icml04.icdm06long.pdf) [1][2] in Python, based on [scikit-learn](http://scikit-learn.org).
@@ -41,10 +41,13 @@ Hillclimbing can be performed using auc, accuracy, rmse, cross entropy or F1 sco
 If the object is initialized with the _model_ parameter equal to None, the object tries to load
 a fitted ensemble from the database specified.
 
-####__test_ensemble.py__
+####__model_library.py__
 
-A test harness to run ensemble selection on the [Letter](http://archive.ics.uci.edu/ml/datasets/Letter+Recognition) dataset.  The letter identification
-problem is reduced to a binary problem by dividing the alphabet in half.
+Example model library building code.
+
+####__ensemble_train.py__
+
+Training utility to run ensemble selection on svm data files.
 
 The user can choose from the following candidate models:
 
@@ -55,29 +58,33 @@ The user can choose from the following candidate models:
 *    forest  : Random Forests
 *    extra   : Extra Trees
 *    kmp     : KMeans->LogisticRegression Pipelines
+*    kernp   : Nystroem Approx->Logistic Regression Pipelines
 
 Some model choices are __very slow__.  The default is to use decision trees, which are reasonably fast.
 
 The simplest command line is:
 
-    unix> python test_ensemble.py -D /path/to/some/sqlite/dbfile.db
+    unix> python ensemble_train.py -D some_dbfile.db -d some_data.svm
+    
+__*(Class labels must be sequential integers starting at zero)*__
     
 Full usage is:
 
 ```
-usage: test_ensemble.py [-h] -D DB_NAME
-                        [-M {svc,sgd,gbc,dtree,forest,extra,kmp} [{svc,sgd,gbc,dtree,forest,extra,kmp} ...]]
-                        [-S {f1,auc,rmse,accuracy,xentropy}] [-b N_BAGS]
-                        [-f BAG_FRACTION] [-B N_BEST] [-m MAX_MODELS]
-                        [-F N_FOLDS] [-p PRUNE_FRACTION] [-u] [-e EPSILON]
-                        [-t TEST_SIZE] [-s SEED] [-v]
+usage: ensemble_train.py [-h] -D DB_FILE -d DATA_FILE
+                         [-M {svc,sgd,gbc,dtree,forest,extra,kmp,kernp} [{svc,sgd,gbc,dtree,forest,extra,kmp,kernp} ...]]
+                         [-S {f1,auc,rmse,accuracy,xentropy}] [-b N_BAGS]
+                         [-f BAG_FRACTION] [-B N_BEST] [-m MAX_MODELS]
+                         [-F N_FOLDS] [-p PRUNE_FRACTION] [-u] [-e EPSILON]
+                         [-t TEST_SIZE] [-s SEED] [-v]
 
-Test EnsembleClassifier
+EnsembleSelectionClassifier training harness
 
 optional arguments:
   -h, --help            show this help message and exit
-  -D DB_NAME            file for backing store
-  -M {svc,sgd,gbc,dtree,forest,extra,kmp} [{svc,sgd,gbc,dtree,forest,extra,kmp} ...]
+  -D DB_FILE            sqlite db file for backing store
+  -d DATA_FILE          training data in svm format
+  -M {svc,sgd,gbc,dtree,forest,extra,kmp,kernp} [{svc,sgd,gbc,dtree,forest,extra,kmp,kernp} ...]
                         model types to include as ensemble candidates
                         (default: ['dtree'])
   -S {f1,auc,rmse,accuracy,xentropy}
@@ -95,11 +102,35 @@ optional arguments:
   -u                    use epsilon to stop adding models (default: False)
   -e EPSILON            score improvement threshold to include new model
                         (default: 0.0001)
-  -t TEST_SIZE          fraction of data to use for testing (default: 0.95)
+  -t TEST_SIZE          fraction of data to use for testing (default: 0.25)
   -s SEED               random seed
   -v                    show progress messages
 ```
 
+
+
+####__ensemble_predict.py__
+
+Get predictions from trained EnsembleSelectionClassifier given
+svm format data file.
+
+Can output predicted classes or probabilities from the full
+ensemble or just the best model.
+
+Expects to find a trained ensemble in the sqlite db specified.
+
+```
+usage: ensemble_predict.py [-h] -D DB_FILE -d DATA_FILE [-s {best,ens}] [-p]
+
+Get EnsembleSelectionClassifier predictions
+
+optional arguments:
+  -h, --help     show this help message and exit
+  -D DB_FILE     sqlite db file for backing store
+  -d DATA_FILE   testing data in svm format
+  -s {best,ens}  choose source of prediction ["best", "ens"]
+  -p             predict probabilities
+```
 
 Requirements
 ------------

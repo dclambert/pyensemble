@@ -10,9 +10,6 @@ Training harness for EnsembleSelectionClassifier
 Training harness for EnsembleSelectionClassifier object, implementing
 Caruana-style ensemble selection.
 
-This uses the Letters dataset, making it a binary classification
-problem, each class representing one half of the alphabet.
-
 The user can choose from the following candidate models:
 
     sgd     : Stochastic Gradient Descent

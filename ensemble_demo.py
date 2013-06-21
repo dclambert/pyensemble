@@ -3,11 +3,11 @@
 # Copyright(c) 2013
 # License: Simple BSD
 """
-=============================
-Tester for EnsembleClassifier
-=============================
+===========================
+Demo for EnsembleClassifier
+===========================
 
-Test harness for EnsembleClassifier object, implementing
+Demo harness for EnsembleClassifier object, implementing
 Caruana-style ensemble selection.
 
 This uses the Letters dataset, making it a binary classification
@@ -23,14 +23,14 @@ The user can choose from the following candidate models:
     extra   : Extra Trees
     kmp     : KMeans->LogisticRegression Pipelines
 
-usage: test_ensemble.py [-h] -D DB_NAME -d TRAIN_FILE
+usage: ensemble_demo.py [-h] -D DB_NAME -d TRAIN_FILE
                         [-M {svc,sgd,gbc,dtree,forest,extra,kmp} [{svc,sgd,gbc,dtree,forest,extra,kmp} ...]]
                         [-S {f1,auc,rmse,accuracy,xentropy}] [-b N_BAGS]
                         [-f BAG_FRACTION] [-B N_BEST] [-m MAX_MODELS]
                         [-F N_FOLDS] [-p PRUNE_FRACTION] [-u] [-e EPSILON]
                         [-t TEST_SIZE] [-s SEED] [-v]
 
-Test EnsembleClassifier
+EnsembleSelectionClassifier demo
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -61,29 +61,26 @@ optional arguments:
 
 from __future__ import print_function
 
-import numpy as np
 from argparse import ArgumentParser
 
-from sklearn.utils import check_random_state
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
 from sklearn.datasets import load_svmlight_file
-from sklearn.grid_search import IterGrid
 from sklearn.cross_validation import train_test_split
 
 from ensemble import EnsembleSelectionClassifier
 from model_library import build_model_library
 
 def parse_args():
-    parser = ArgumentParser(description='Test EnsembleClassifier')
+    parser = ArgumentParser(description='EnsembleSelectionClassifier demo')
 
     dflt_fmt = '(default: %(default)s)'
 
-    parser.add_argument('-D', dest='db_name', required=True,
-                        help='file for backing store')
+    parser.add_argument('-D', dest='db_file', required=True,
+                        help='sqlite db file for backing store')
 
-    parser.add_argument('-d', dest='train_file', required=True,
-                        help='testing data in svm format')
+    parser.add_argument('-d', dest='data_file', required=True,
+                        help='training data in svm format')
 
     model_choices = ['svc', 'sgd', 'gbc', 'dtree', 'forest', 'extra', 'kmp']
     help_fmt = 'model types to include as ensemble candidates %s' % dflt_fmt
@@ -130,7 +127,7 @@ def parse_args():
 
     help_fmt = 'fraction of data to use for testing %s' % dflt_fmt
     parser.add_argument('-t', dest='test_size', type=float, help=help_fmt,
-                        default=0.95)
+                        default=0.25)
 
     help_fmt = 'random seed'
     parser.add_argument('-s', dest='seed', type=int, help=help_fmt)
@@ -143,23 +140,32 @@ def parse_args():
 
 if (__name__ == '__main__'):
     res = parse_args()
+    print(res)
 
-    X, y = load_svmlight_file(res.train_file)
-    X = X.toarray()
+    X_train, y_train = load_svmlight_file(res.data_file)
+    X_train = X_train.toarray()
 
-    splits = train_test_split(X, y, test_size=res.test_size,
-                              random_state=res.seed)
-    X_train, X_test, y_train, y_test = splits
+    # train_test_split for testing set if test_size>0.0
+    if (res.test_size > 0.0):
+        do_test = True
+        splits = train_test_split(X_train, y_train,
+                                  test_size=res.test_size,
+                                  random_state=res.seed)
 
-    print('Train/hillclimbing set size: %d' % len(X_train))
-    print('              Test set size: %d\n' % len(X_test))
+        X_train, X_test, y_train, y_test = splits
+        print('Train/hillclimbing set size: %d' % len(X_train))
+        print('              Test set size: %d\n' % len(X_test))
+    else:
+        do_test = False
+        print('Train/hillclimbing set size: %d' % len(X_train))
 
+    # get model lib
     models = build_model_library(res.model_types, res.seed)
     print('built %d models\n' % len(models))
 
     param_dict = {
         'models': models,
-        'db_name': res.db_name,
+        'db_file': res.db_file,
         'n_best': res.n_best,
         'n_folds': res.n_folds,
         'n_bags': res.n_bags,
@@ -177,26 +183,28 @@ if (__name__ == '__main__'):
 
     print('fitting ensemble:\n%s\n' % ens)
 
+    # fit models, score, build ensemble
     ens.fit(X_train, y_train)
 
     preds = ens.best_model_predict(X_train)
     score = accuracy_score(y_train, preds)
     print('Train set accuracy from best model: %.5f' % score)
 
-    preds = ens.best_model_predict(X_test)
-    score = accuracy_score(y_test, preds)
-    print(' Test set accuracy from best model: %.5f' % score)
-
-    report = classification_report(y_test, preds)
-    print('\n Test set classification report for best model:\n%s' % report)
-
     preds = ens.predict(X_train)
     score = accuracy_score(y_train, preds)
-    print('\nTrain set accuracy from final ensemble: %.5f' % score)
+    print('Train set accuracy from final ensemble: %.5f' % score)
 
-    preds = ens.predict(X_test)
-    score = accuracy_score(y_test, preds)
-    print(' Test set accuracy from final ensemble: %.5f' % score)
+    if (do_test):
+        preds = ens.best_model_predict(X_test)
+        score = accuracy_score(y_test, preds)
+        print('\n Test set accuracy from best model: %.5f' % score)
 
-    report = classification_report(y_test, preds)
-    print('\n Test set classification report for final ensemble:\n%s' % report)
+        report = classification_report(y_test, preds)
+        print('\n Test set classification report for best model:\n%s' % report)
+
+        preds = ens.predict(X_test)
+        score = accuracy_score(y_test, preds)
+        print(' Test set accuracy from final ensemble: %.5f' % score)
+
+        report = classification_report(y_test, preds)
+        print('\n Test set classification report for final ensemble:\n%s' % report)

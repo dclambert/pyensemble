@@ -3,11 +3,11 @@
 # Copyright(c) 2013
 # License: Simple BSD
 """
-===========================
-Demo for EnsembleClassifier
-===========================
+================================================
+Training harness for EnsembleSelectionClassifier
+================================================
 
-Demo harness for EnsembleClassifier object, implementing
+Training harness for EnsembleSelectionClassifier object, implementing
 Caruana-style ensemble selection.
 
 This uses the Letters dataset, making it a binary classification
@@ -22,21 +22,22 @@ The user can choose from the following candidate models:
     forest  : Random Forests
     extra   : Extra Trees
     kmp     : KMeans->LogisticRegression Pipelines
+    kern    : Nystroem->LogisticRegression Pipelines
 
-usage: ensemble_demo.py [-h] -D DB_NAME -d TRAIN_FILE
-                        [-M {svc,sgd,gbc,dtree,forest,extra,kmp} [{svc,sgd,gbc,dtree,forest,extra,kmp} ...]]
-                        [-S {f1,auc,rmse,accuracy,xentropy}] [-b N_BAGS]
-                        [-f BAG_FRACTION] [-B N_BEST] [-m MAX_MODELS]
-                        [-F N_FOLDS] [-p PRUNE_FRACTION] [-u] [-e EPSILON]
-                        [-t TEST_SIZE] [-s SEED] [-v]
+usage: ensemble_train.py [-h] -D DB_FILE -d DATA_FILE
+                         [-M {svc,sgd,gbc,dtree,forest,extra,kmp,kernp} [{svc,sgd,gbc,dtree,forest,extra,kmp,kernp} ...]]
+                         [-S {f1,auc,rmse,accuracy,xentropy}] [-b N_BAGS]
+                         [-f BAG_FRACTION] [-B N_BEST] [-m MAX_MODELS]
+                         [-F N_FOLDS] [-p PRUNE_FRACTION] [-u] [-e EPSILON]
+                         [-t TEST_SIZE] [-s SEED] [-v]
 
-EnsembleSelectionClassifier demo
+EnsembleSelectionClassifier training harness
 
 optional arguments:
   -h, --help            show this help message and exit
-  -D DB_NAME            file for backing store
-  -d TRAIN_FILE         testing data in svm format
-  -M {svc,sgd,gbc,dtree,forest,extra,kmp} [{svc,sgd,gbc,dtree,forest,extra,kmp} ...]
+  -D DB_FILE            sqlite db file for backing store
+  -d DATA_FILE          training data in svm format
+  -M {svc,sgd,gbc,dtree,forest,extra,kmp,kernp} [{svc,sgd,gbc,dtree,forest,extra,kmp,kernp} ...]
                         model types to include as ensemble candidates
                         (default: ['dtree'])
   -S {f1,auc,rmse,accuracy,xentropy}
@@ -54,7 +55,7 @@ optional arguments:
   -u                    use epsilon to stop adding models (default: False)
   -e EPSILON            score improvement threshold to include new model
                         (default: 0.0001)
-  -t TEST_SIZE          fraction of data to use for testing (default: 0.95)
+  -t TEST_SIZE          fraction of data to use for testing (default: 0.25)
   -s SEED               random seed
   -v                    show progress messages
 """
@@ -72,7 +73,7 @@ from ensemble import EnsembleSelectionClassifier
 from model_library import build_model_library
 
 def parse_args():
-    parser = ArgumentParser(description='EnsembleSelectionClassifier demo')
+    parser = ArgumentParser(description='EnsembleSelectionClassifier training harness')
 
     dflt_fmt = '(default: %(default)s)'
 
@@ -82,7 +83,7 @@ def parse_args():
     parser.add_argument('-d', dest='data_file', required=True,
                         help='training data in svm format')
 
-    model_choices = ['svc', 'sgd', 'gbc', 'dtree', 'forest', 'extra', 'kmp']
+    model_choices = ['svc', 'sgd', 'gbc', 'dtree', 'forest', 'extra', 'kmp', 'kernp']
     help_fmt = 'model types to include as ensemble candidates %s' % dflt_fmt
     parser.add_argument('-M', dest='model_types', nargs='+',
                         choices=model_choices,
@@ -140,7 +141,6 @@ def parse_args():
 
 if (__name__ == '__main__'):
     res = parse_args()
-    print(res)
 
     X_train, y_train = load_svmlight_file(res.data_file)
     X_train = X_train.toarray()

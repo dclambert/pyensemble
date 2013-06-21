@@ -22,7 +22,8 @@ The user can choose from the following candidate models:
     kern    : Nystroem->LogisticRegression Pipelines
 
 usage: ensemble_train.py [-h] -D DB_FILE -d DATA_FILE
-                         [-M {svc,sgd,gbc,dtree,forest,extra,kmp,kernp} [{svc,sgd,gbc,dtree,forest,extra,kmp,kernp} ...]]
+                         [-M {svc,sgd,gbc,dtree,forest,extra,kmp,kernp}
+                             [{svc,sgd,gbc,dtree,forest,extra,kmp,kernp} ...]]
                          [-S {f1,auc,rmse,accuracy,xentropy}] [-b N_BAGS]
                          [-f BAG_FRACTION] [-B N_BEST] [-m MAX_MODELS]
                          [-F N_FOLDS] [-p PRUNE_FRACTION] [-u] [-e EPSILON]
@@ -34,7 +35,8 @@ optional arguments:
   -h, --help            show this help message and exit
   -D DB_FILE            sqlite db file for backing store
   -d DATA_FILE          training data in svm format
-  -M {svc,sgd,gbc,dtree,forest,extra,kmp,kernp} [{svc,sgd,gbc,dtree,forest,extra,kmp,kernp} ...]
+  -M {svc,sgd,gbc,dtree,forest,extra,kmp,kernp}
+               [{svc,sgd,gbc,dtree,forest,extra,kmp,kernp} ...]
                         model types to include as ensemble candidates
                         (default: ['dtree'])
   -S {f1,auc,rmse,accuracy,xentropy}
@@ -69,8 +71,10 @@ from sklearn.cross_validation import train_test_split
 from ensemble import EnsembleSelectionClassifier
 from model_library import build_model_library
 
+
 def parse_args():
-    parser = ArgumentParser(description='EnsembleSelectionClassifier training harness')
+    desc = 'EnsembleSelectionClassifier training harness'
+    parser = ArgumentParser(description=desc)
 
     dflt_fmt = '(default: %(default)s)'
 
@@ -80,7 +84,8 @@ def parse_args():
     parser.add_argument('-d', dest='data_file', required=True,
                         help='training data in svm format')
 
-    model_choices = ['svc', 'sgd', 'gbc', 'dtree', 'forest', 'extra', 'kmp', 'kernp']
+    model_choices = ['svc', 'sgd', 'gbc', 'dtree',
+                     'forest', 'extra', 'kmp', 'kernp']
     help_fmt = 'model types to include as ensemble candidates %s' % dflt_fmt
     parser.add_argument('-M', dest='model_types', nargs='+',
                         choices=model_choices,
@@ -196,12 +201,14 @@ if (__name__ == '__main__'):
         score = accuracy_score(y_test, preds)
         print('\n Test set accuracy from best model: %.5f' % score)
 
+        fmt = '\n Test set classification report for best model:\n%s'
         report = classification_report(y_test, preds)
-        print('\n Test set classification report for best model:\n%s' % report)
+        print(fmt % report)
 
         preds = ens.predict(X_test)
         score = accuracy_score(y_test, preds)
         print(' Test set accuracy from final ensemble: %.5f' % score)
 
+        fmt = '\n Test set classification report for final ensemble:\n%s'
         report = classification_report(y_test, preds)
-        print('\n Test set classification report for final ensemble:\n%s' % report)
+        print(fmt % report)

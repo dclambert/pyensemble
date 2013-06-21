@@ -41,6 +41,8 @@ Hillclimbing can be performed using auc, accuracy, rmse, cross entropy or F1 sco
 If the object is initialized with the _model_ parameter equal to None, the object tries to load
 a fitted ensemble from the database specified.
 
+__*(NOTE: Expects class labels to be sequential integers starting at zero [for now].)*__
+    
 ####__model_library.py__
 
 Example model library building code.
@@ -65,8 +67,6 @@ Some model choices are __very slow__.  The default is to use decision trees, whi
 The simplest command line is:
 
     unix> python ensemble_train.py -D some_dbfile.db -d some_data.svm
-    
-__*(Class labels must be sequential integers starting at zero)*__
     
 Full usage is:
 

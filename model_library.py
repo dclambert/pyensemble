@@ -21,6 +21,7 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.kernel_approximation import Nystroem
 
+
 # generic model builder
 def build_models(model_class, param_grid):
     print('Building %s models' % str(model_class).split('.')[-1][:-2])
@@ -140,7 +141,7 @@ def build_kernPipelines(random_state=None):
     print('Building Kernel Approximation Pipelines')
 
     param_grid = {
-        'n_components' : xrange(5,105,5),
+        'n_components': xrange(5, 105, 5),
         'gamma': np.logspace(-6, 2, 9, base=2)
     }
 

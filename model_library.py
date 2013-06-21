@@ -10,16 +10,16 @@ import numpy as np
 
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.utils import check_random_state
 from sklearn.cluster import KMeans
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.pipeline import Pipeline
+from sklearn.grid_search import IterGrid
 from sklearn.linear_model import SGDClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.grid_search import IterGrid
-from sklearn.utils import check_random_state
-
+from sklearn.kernel_approximation import Nystroem
 
 # generic model builder
 def build_models(model_class, param_grid):
@@ -136,6 +136,24 @@ def build_svcs(random_state=None):
     return models
 
 
+def build_kernPipelines(random_state=None):
+    print('Building Kernel Approximation Pipelines')
+
+    param_grid = {
+        'n_components' : xrange(5,105,5),
+        'gamma': np.logspace(-6, 2, 9, base=2)
+    }
+
+    models = []
+
+    for params in IterGrid(param_grid):
+        nys = Nystroem(**params)
+        lr = LogisticRegression()
+        models.append(Pipeline([('nys', nys), ('lr', lr)]))
+
+    return models
+
+
 def build_kmeansPipelines(random_state=None):
     print('Building KMeans-Logistic Regression Pipelines')
 
@@ -164,6 +182,7 @@ models_dict = {
     'forest': build_randomForestClassifiers,
     'extra': build_extraTreesClassifiers,
     'kmp': build_kmeansPipelines,
+    'kernp': build_kernPipelines,
 }
 
 

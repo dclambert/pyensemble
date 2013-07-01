@@ -126,31 +126,6 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
            (ICDM `06).
     """
 
-    # db setup script
-    _createTablesScript = """
-        create table models (
-            model_idx      integer UNIQUE NOT NULL,
-            pickled_model  blob NOT NULL
-        );
-
-        create table fitted_models (
-            model_idx      integer NOT NULL,
-            fold_idx       integer NOT NULL,
-            pickled_model  blob NOT NULL
-        );
-
-        create table model_scores (
-            model_idx      integer UNIQUE NOT NULL,
-            score          real NOT NULL,
-            probs          blob NOT NULL
-        );
-
-        create table ensemble (
-            model_idx      integer NOT NULL,
-            weight         integer NOT NULL
-        );
-    """
-
     _metrics = {
         'f1': _f1,
         'auc': _auc,
@@ -224,6 +199,31 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
     def _init_db(self, models):
         """Initialize database"""
 
+        # db setup script
+        _createTablesScript = """
+            create table models (
+                model_idx      integer UNIQUE NOT NULL,
+                pickled_model  blob NOT NULL
+            );
+
+            create table fitted_models (
+                model_idx      integer NOT NULL,
+                fold_idx       integer NOT NULL,
+                pickled_model  blob NOT NULL
+            );
+
+            create table model_scores (
+                model_idx      integer UNIQUE NOT NULL,
+                score          real NOT NULL,
+                probs          blob NOT NULL
+            );
+
+            create table ensemble (
+                model_idx      integer NOT NULL,
+                weight         integer NOT NULL
+            );
+        """
+
         if (models):
             # nuke old database
             try:
@@ -238,7 +238,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
         if (models):
             # build database
             with db_conn:
-                db_conn.executescript(self._createTablesScript)
+                db_conn.executescript(_createTablesScript)
 
             # populate model table
             insert_stmt = """insert into models (model_idx, pickled_model)

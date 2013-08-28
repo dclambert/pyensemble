@@ -1,4 +1,3 @@
-# -*- coding: utf8
 # Author: David C. Lambert [dcl -at- panix -dot- com]
 # Copyright(c) 2013
 # License: Simple BSD
@@ -67,6 +66,12 @@ def _mxentropy(y, y_bin, probs):
     return (y_bin * np.log(probs)).sum() / y.shape[0]
 
 
+def _bootstraps(n, rs):
+    """return bootstrap sample indices for given n"""
+    bs_inds = rs.randint(n, size=(n))
+    return bs_inds, np.setdiff1d(range(n), bs_inds)
+
+
 class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
     """Caruana-style ensemble selection [1][2]
 
@@ -105,6 +110,11 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
     `verbose` : boolean (default: False)
         Turn on verbose messages.
 
+    `use_bootstrap`: boolean (default: False)
+        If True, use bootstrap sample of entire dataset for fitting, and
+        oob samples for hillclimbing for each internal CV fold instead
+        of StratifiedKFolds
+
     `use_epsilon` : boolean (default: False)
         If True, candidates models are added to ensembles until the value
         of the score_metric fails to improve by the value of the epsilon
@@ -140,8 +150,8 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
                  prune_fraction=0.8,
                  score_metric='accuracy',
                  epsilon=0.01, max_models=50,
-                 use_epsilon=False, verbose=False,
-                 random_state=None):
+                 use_epsilon=False, use_bootstrap=False,
+                 verbose=False, random_state=None):
 
         self.db_file = db_file
         self.models = models
@@ -154,6 +164,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
         self.epsilon = epsilon
         self.max_models = max_models
         self.use_epsilon = use_epsilon
+        self.use_bootstrap = use_bootstrap
         self.verbose = verbose
         self.random_state = random_state
 
@@ -192,9 +203,14 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
             msg = "max_models must be >= n_best"
             raise ValueError(msg)
 
-        if (self.n_folds < 2):
-            msg = "n_folds must be >= 2"
-            raise ValueError(msg)
+        if (not self.use_bootstrap):
+            if (self.n_folds < 2):
+                msg = "n_folds must be >= 2 for StratifiedKFolds"
+                raise ValueError(msg)
+        else:
+            if (self.n_folds < 1): 
+                msg = "n_folds must be >= 1 with bootstrap"
+                raise ValueError(msg)
 
     def _init_db(self, models):
         """Initialize database"""
@@ -281,7 +297,12 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
         if (self.verbose):
             sys.stderr.write('\nfitting models:\n')
 
-        self._folds = list(StratifiedKFold(y, n_folds=self.n_folds))
+        if (self.use_bootstrap):
+            n = X.shape[0]
+            rs = check_random_state(self.random_state)
+            self._folds = [_bootstraps(n, rs) for _ in xrange(self.n_folds)]
+        else:
+            self._folds = list(StratifiedKFold(y, n_folds=self.n_folds))
 
         select_stmt = "select pickled_model from models where model_idx = ?"
         insert_stmt = """insert into fitted_models
@@ -364,6 +385,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
 
             score = self._metric(y, y_bin, probs)
 
+            # save score and probs array
             with db_conn:
                 vals = (model_idx, score, buffer(dumps(probs)))
                 db_conn.execute(insert_stmt, vals)
@@ -436,10 +458,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
         if (self.verbose):
             sys.stderr.write('%02d/%.3f ' % (ens_count, ens_score))
 
-        if (not self.use_epsilon):
-            cand_ensembles = []
-
-        last_ens_score = -100.0
+        cand_ensembles = []
         while(ens_count < self.max_models):
             new_scores = []
             for new_model_idx in candidates:

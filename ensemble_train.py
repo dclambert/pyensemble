@@ -1,4 +1,4 @@
-# -*- coding: utf8
+#!/usr/bin/env python
 # Author: David C. Lambert [dcl -at- panix -dot- com]
 # Copyright(c) 2013
 # License: Simple BSD
@@ -21,22 +21,25 @@ The user can choose from the following candidate models:
     kmp     : KMeans->LogisticRegression Pipelines
     kern    : Nystroem->LogisticRegression Pipelines
 
-usage: ensemble_train.py [-h] -D DB_FILE -d DATA_FILE
+usage: ensemble_train.py [-h]
                          [-M {svc,sgd,gbc,dtree,forest,extra,kmp,kernp}
-                             [{svc,sgd,gbc,dtree,forest,extra,kmp,kernp} ...]]
+                            [{svc,sgd,gbc,dtree,forest,extra,kmp,kernp} ...]]
                          [-S {f1,auc,rmse,accuracy,xentropy}] [-b N_BAGS]
                          [-f BAG_FRACTION] [-B N_BEST] [-m MAX_MODELS]
-                         [-F N_FOLDS] [-p PRUNE_FRACTION] [-u] [-e EPSILON]
-                         [-t TEST_SIZE] [-s SEED] [-v]
+                         [-F N_FOLDS] [-p PRUNE_FRACTION] [-u] [-U]
+                         [-e EPSILON] [-t TEST_SIZE] [-s SEED] [-v]
+                         db_file data_file
 
 EnsembleSelectionClassifier training harness
 
+positional arguments:
+  db_file               sqlite db file for backing store
+  data_file             training data in svm format
+
 optional arguments:
   -h, --help            show this help message and exit
-  -D DB_FILE            sqlite db file for backing store
-  -d DATA_FILE          training data in svm format
   -M {svc,sgd,gbc,dtree,forest,extra,kmp,kernp}
-               [{svc,sgd,gbc,dtree,forest,extra,kmp,kernp} ...]
+    [{svc,sgd,gbc,dtree,forest,extra,kmp,kernp} ...]
                         model types to include as ensemble candidates
                         (default: ['dtree'])
   -S {f1,auc,rmse,accuracy,xentropy}
@@ -52,6 +55,8 @@ optional arguments:
   -p PRUNE_FRACTION     fraction of worst models pruned pre-selection
                         (default: 0.75)
   -u                    use epsilon to stop adding models (default: False)
+  -U                    use bootstrap sample to generate training/hillclimbing
+                        folds (default: False)
   -e EPSILON            score improvement threshold to include new model
                         (default: 0.0001)
   -t TEST_SIZE          fraction of data to use for testing (default: 0.25)
@@ -78,11 +83,8 @@ def parse_args():
 
     dflt_fmt = '(default: %(default)s)'
 
-    parser.add_argument('-D', dest='db_file', required=True,
-                        help='sqlite db file for backing store')
-
-    parser.add_argument('-d', dest='data_file', required=True,
-                        help='training data in svm format')
+    parser.add_argument('db_file', help='sqlite db file for backing store')
+    parser.add_argument('data_file', help='training data in svm format')
 
     model_choices = ['svc', 'sgd', 'gbc', 'dtree',
                      'forest', 'extra', 'kmp', 'kernp']
@@ -124,6 +126,10 @@ def parse_args():
     parser.add_argument('-u', dest='use_epsilon', action='store_true',
                         help=help_fmt, default=False)
 
+    help_fmt = 'use bootstrap sample to generate training/hillclimbing folds %s' % dflt_fmt
+    parser.add_argument('-U', dest='use_bootstrap', action='store_true',
+                        help=help_fmt, default=False)
+
     help_fmt = 'score improvement threshold to include new model %s' % dflt_fmt
     parser.add_argument('-e', dest='epsilon', type=float,
                         help=help_fmt, default=0.0001)
@@ -136,7 +142,7 @@ def parse_args():
     parser.add_argument('-s', dest='seed', type=int, help=help_fmt)
 
     parser.add_argument('-v', dest='verbose', action='store_true',
-                        help='show progress messages', default=True)
+                        help='show progress messages', default=False)
 
     return parser.parse_args()
 
@@ -177,6 +183,7 @@ if (__name__ == '__main__'):
         'verbose': res.verbose,
         'epsilon': res.epsilon,
         'use_epsilon': res.use_epsilon,
+        'use_bootstrap': res.use_bootstrap,
         'max_models': res.max_models,
         'random_state': res.seed,
     }

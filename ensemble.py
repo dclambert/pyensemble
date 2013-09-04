@@ -240,12 +240,9 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
             );
         """
 
-        if (models):
-            # nuke old database
-            try:
-                os.remove(self.db_file)
-            except OSError:
-                pass
+        # barf if db file exists and we're making a new model
+        if (models and os.path.exists(self.db_file)):
+            raise ValueError("db_file '%s' already exists!" % self.db_file)
 
         db_conn = sqlite3.connect(self.db_file)
         with db_conn:

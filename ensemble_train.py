@@ -188,7 +188,12 @@ if (__name__ == '__main__'):
         'random_state': res.seed,
     }
 
-    ens = EnsembleSelectionClassifier(**param_dict)
+    try:
+        ens = EnsembleSelectionClassifier(**param_dict)
+    except ValueError as e:
+        print('ERROR: %s' % e)
+        import sys
+        sys.exit(1)
 
     print('fitting ensemble:\n%s\n' % ens)
 

@@ -1,4 +1,4 @@
-# -*- coding: utf8
+#!/usr/bin/env python
 # Author: David C. Lambert [dcl -at- panix -dot- com]
 # Copyright(c) 2013
 # License: Simple BSD
@@ -41,11 +41,8 @@ def parse_args():
     desc = 'Get EnsembleSelectionClassifier predictions'
     parser = ArgumentParser(description=desc)
 
-    parser.add_argument('-D', dest='db_file', required=True,
-                        help='sqlite db file for backing store')
-
-    parser.add_argument('-d', dest='data_file', required=True,
-                        help='testing data in svm format')
+    parser.add_argument('db_file', help='sqlite db file containing model')
+    parser.add_argument('data_file', help='testing data in svm format')
 
     help_fmt = 'choose source of prediction ["best", "ens"]'
     parser.add_argument('-s', dest='pred_src',

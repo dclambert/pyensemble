@@ -15,14 +15,16 @@ ensemble or just the best model.
 
 Expects to find a trained ensemble in the sqlite db specified.
 
-usage: ensemble_predict.py [-h] -D DB_FILE -d DATA_FILE [-s {best,ens}] [-p]
+usage: ensemble_predict.py [-h] [-s {best,ens}] [-p] db_file data_file
 
 Get EnsembleSelectionClassifier predictions
 
+positional arguments:
+  db_file        sqlite db file containing model
+  data_file      testing data in svm format
+
 optional arguments:
   -h, --help     show this help message and exit
-  -D DB_FILE     sqlite db file for backing store
-  -d DATA_FILE   testing data in svm format
   -s {best,ens}  choose source of prediction ["best", "ens"]
   -p             predict probabilities
 """

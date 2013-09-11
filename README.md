@@ -1,4 +1,4 @@
-pyensemble v0.3
+pyensemble v0.4
 ===============
 
 ######An implementation of [Caruana et al's Ensemble Selection algorithm] (http://www.cs.cornell.edu/~caruana/ctp/ct.papers/caruana.icml04.icdm06long.pdf) [1][2] in Python, based on [scikit-learn](http://scikit-learn.org).
@@ -66,25 +66,32 @@ Some model choices are __very slow__.  The default is to use decision trees, whi
 
 The simplest command line is:
 
-    unix> python ensemble_train.py -D some_dbfile.db -d some_data.svm
+    unix> ./ensemble_train.py some_dbfile.db some_data.svm
+
+__*(NOTE: Expects 'some_dbfile.db' not to exist, and will quit if it does (so you don't accidentally blow away your model.)*__
     
 Full usage is:
 
 ```
-usage: ensemble_train.py [-h] -D DB_FILE -d DATA_FILE
-                         [-M {svc,sgd,gbc,dtree,forest,extra,kmp,kernp} [{svc,sgd,gbc,dtree,forest,extra,kmp,kernp} ...]]
+usage: ensemble_train.py [-h]
+                         [-M {svc,sgd,gbc,dtree,forest,extra,kmp,kernp}
+                            [{svc,sgd,gbc,dtree,forest,extra,kmp,kernp} ...]]
                          [-S {f1,auc,rmse,accuracy,xentropy}] [-b N_BAGS]
                          [-f BAG_FRACTION] [-B N_BEST] [-m MAX_MODELS]
-                         [-F N_FOLDS] [-p PRUNE_FRACTION] [-u] [-e EPSILON]
-                         [-t TEST_SIZE] [-s SEED] [-v]
+                         [-F N_FOLDS] [-p PRUNE_FRACTION] [-u] [-U]
+                         [-e EPSILON] [-t TEST_SIZE] [-s SEED] [-v]
+                         db_file data_file
 
 EnsembleSelectionClassifier training harness
 
+positional arguments:
+  db_file               sqlite db file for backing store
+  data_file             training data in svm format
+
 optional arguments:
   -h, --help            show this help message and exit
-  -D DB_FILE            sqlite db file for backing store
-  -d DATA_FILE          training data in svm format
-  -M {svc,sgd,gbc,dtree,forest,extra,kmp,kernp} [{svc,sgd,gbc,dtree,forest,extra,kmp,kernp} ...]
+  -M {svc,sgd,gbc,dtree,forest,extra,kmp,kernp}
+    [{svc,sgd,gbc,dtree,forest,extra,kmp,kernp} ...]
                         model types to include as ensemble candidates
                         (default: ['dtree'])
   -S {f1,auc,rmse,accuracy,xentropy}
@@ -100,9 +107,11 @@ optional arguments:
   -p PRUNE_FRACTION     fraction of worst models pruned pre-selection
                         (default: 0.75)
   -u                    use epsilon to stop adding models (default: False)
+  -U                    use bootstrap sample to generate training/hillclimbing
+                        folds (default: False)
   -e EPSILON            score improvement threshold to include new model
                         (default: 0.0001)
-  -t TEST_SIZE          fraction of data to use for testing (default: 0.25)
+  -t TEST_SIZE          fraction of data to use for testing (default: 0.75)
   -s SEED               random seed
   -v                    show progress messages
 ```
@@ -120,14 +129,16 @@ ensemble or just the best model.
 Expects to find a trained ensemble in the sqlite db specified.
 
 ```
-usage: ensemble_predict.py [-h] -D DB_FILE -d DATA_FILE [-s {best,ens}] [-p]
+usage: ensemble_predict.py [-h] [-s {best,ens}] [-p] db_file data_file
 
 Get EnsembleSelectionClassifier predictions
 
+positional arguments:
+  db_file        sqlite db file containing model
+  data_file      testing data in svm format
+
 optional arguments:
   -h, --help     show this help message and exit
-  -D DB_FILE     sqlite db file for backing store
-  -d DATA_FILE   testing data in svm format
   -s {best,ens}  choose source of prediction ["best", "ens"]
   -p             predict probabilities
 ```

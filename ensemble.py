@@ -208,7 +208,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
                 msg = "n_folds must be >= 2 for StratifiedKFolds"
                 raise ValueError(msg)
         else:
-            if (self.n_folds < 1): 
+            if (self.n_folds < 1):
                 msg = "n_folds must be >= 1 with bootstrap"
                 raise ValueError(msg)
 

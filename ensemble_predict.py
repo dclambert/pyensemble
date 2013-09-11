@@ -46,7 +46,7 @@ def parse_args():
     parser.add_argument('db_file', help='sqlite db file containing model')
     parser.add_argument('data_file', help='testing data in svm format')
 
-    help_fmt = 'choose source of prediction ["best", "ens"]'
+    help_fmt = 'choose source of prediction ["best", "ens"] (default "ens")'
     parser.add_argument('-s', dest='pred_src',
                         choices=['best', 'ens'],
                         help=help_fmt, default='ens')

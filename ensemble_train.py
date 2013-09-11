@@ -59,7 +59,7 @@ optional arguments:
                         folds (default: False)
   -e EPSILON            score improvement threshold to include new model
                         (default: 0.0001)
-  -t TEST_SIZE          fraction of data to use for testing (default: 0.25)
+  -t TEST_SIZE          fraction of data to use for testing (default: 0.75)
   -s SEED               random seed
   -v                    show progress messages
 """
@@ -126,7 +126,8 @@ def parse_args():
     parser.add_argument('-u', dest='use_epsilon', action='store_true',
                         help=help_fmt, default=False)
 
-    help_fmt = 'use bootstrap sample to generate training/hillclimbing folds %s' % dflt_fmt
+    help_fmt = ('use bootstrap sample to generate '
+                'training/hillclimbing folds %s' % dflt_fmt)
     parser.add_argument('-U', dest='use_bootstrap', action='store_true',
                         help=help_fmt, default=False)
 
@@ -136,7 +137,7 @@ def parse_args():
 
     help_fmt = 'fraction of data to use for testing %s' % dflt_fmt
     parser.add_argument('-t', dest='test_size', type=float, help=help_fmt,
-                        default=0.25)
+                        default=0.75)
 
     help_fmt = 'random seed'
     parser.add_argument('-s', dest='seed', type=int, help=help_fmt)

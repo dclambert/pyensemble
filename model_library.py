@@ -16,7 +16,7 @@ from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.pipeline import Pipeline
-from sklearn.grid_search import IterGrid
+from sklearn.grid_search import ParameterGrid
 from sklearn.linear_model import SGDClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.kernel_approximation import Nystroem
@@ -26,11 +26,7 @@ from sklearn.kernel_approximation import Nystroem
 def build_models(model_class, param_grid):
     print('Building %s models' % str(model_class).split('.')[-1][:-2])
 
-    models = []
-    for params in IterGrid(param_grid):
-        models.append(model_class(**params))
-
-    return models
+    return [model_class(**p) for p in ParameterGrid(param_grid)]
 
 
 def build_randomForestClassifiers(random_state=None):
@@ -131,7 +127,7 @@ def build_svcs(random_state=None):
         'cache_size': [1000],
     }
 
-    for params in IterGrid(param_grid):
+    for params in ParameterGrid(param_grid):
         models.append(SVC(**params))
 
     return models
@@ -147,7 +143,7 @@ def build_kernPipelines(random_state=None):
 
     models = []
 
-    for params in IterGrid(param_grid):
+    for params in ParameterGrid(param_grid):
         nys = Nystroem(**params)
         lr = LogisticRegression()
         models.append(Pipeline([('nys', nys), ('lr', lr)]))
@@ -167,7 +163,7 @@ def build_kmeansPipelines(random_state=None):
 
     models = []
 
-    for params in IterGrid(param_grid):
+    for params in ParameterGrid(param_grid):
         km = KMeans(**params)
         lr = LogisticRegression()
         models.append(Pipeline([('km', km), ('lr', lr)]))

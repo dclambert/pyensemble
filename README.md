@@ -68,7 +68,7 @@ The simplest command line is:
 
     unix> ./ensemble_train.py some_dbfile.db some_data.svm
 
-__*(NOTE: Expects 'some_dbfile.db' not to exist, and will quit if it does (so you don't accidentally blow away your model.)*__
+__*(NOTE: Expects 'some_dbfile.db' not to exist, and will quit if it does [so you don't accidentally blow away your model].)*__
     
 Full usage is:
 
@@ -146,7 +146,7 @@ optional arguments:
 Requirements
 ------------
 
-Written using Python 2.7.3, numpy 1.6.1, scipy 0.10.1, scikit-learn 0.13.1 and sqlite 3.7.14
+Written using Python 2.7.3, numpy 1.6.1, scipy 0.10.1, scikit-learn 0.14.1 and sqlite 3.7.14
 
 
 References

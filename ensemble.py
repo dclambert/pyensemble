@@ -60,7 +60,8 @@ def _mxentropy(y, y_bin, probs):
     for hillclimbing"""
 
     # clip away from extremes to avoid under/overflows
-    probs = np.clip(probs, 0.00001, 0.99999, probs)
+    eps = 0.0000001
+    probs = np.clip(probs, eps, 1.0 - eps, probs)
     probs /= probs.sum(axis=1)[:, np.newaxis]
 
     return (y_bin * np.log(probs)).sum() / y.shape[0]
@@ -182,6 +183,8 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
         self._init_db(models)
 
     def _check_params(self):
+        """Parameter sanity checks"""
+
         if (not self.db_file):
             msg = "db_file parameter is required"
             raise ValueError(msg)
@@ -427,6 +430,8 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
         return score, ensemble_probs
 
     def _score_with_model(self, db_conn, y, y_bin, probs, n_models, model_idx):
+        """compute ensemble score with specified model added"""
+
         curs = db_conn.cursor()
         select_stmt = """select probs
                          from model_scores
@@ -457,6 +462,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
 
         cand_ensembles = []
         while(ens_count < self.max_models):
+            # compute and collect scores after adding each candidate
             new_scores = []
             for new_model_idx in candidates:
                 score, _ = self._score_with_model(db_conn, y, y_bin,

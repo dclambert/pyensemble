@@ -29,7 +29,7 @@ from collections import Counter
 
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils import check_random_state
-from sklearn.metrics import f1_score, auc_score
+from sklearn.metrics import f1_score, roc_auc_score
 from sklearn.metrics import mean_squared_error, accuracy_score
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.preprocessing import LabelBinarizer
@@ -42,7 +42,7 @@ def _f1(y, y_bin, probs):
 
 def _auc(y, y_bin, probs):
     """return AUC score (for binary problems only)"""
-    return auc_score(y, probs[:, 1])
+    return roc_auc_score(y, probs[:, 1])
 
 
 def _rmse(y, y_bin, probs):
@@ -60,11 +60,11 @@ def _mxentropy(y, y_bin, probs):
     for hillclimbing"""
 
     # clip away from extremes to avoid under/overflows
-    eps = 0.0000001
-    probs = np.clip(probs, eps, 1.0 - eps, probs)
-    probs /= probs.sum(axis=1)[:, np.newaxis]
+    eps = 1.0e-7
+    clipped = np.clip(probs, eps, 1.0 - eps)
+    clipped /= clipped.sum(axis=1)[:, np.newaxis]
 
-    return (y_bin * np.log(probs)).sum() / y.shape[0]
+    return (y_bin * np.log(clipped)).sum() / y.shape[0]
 
 
 def _bootstraps(n, rs):

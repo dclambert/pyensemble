@@ -1,9 +1,9 @@
 pyensemble v0.41
 ================
 
-######An implementation of [Caruana et al's Ensemble Selection algorithm] (http://www.cs.cornell.edu/~caruana/ctp/ct.papers/caruana.icml04.icdm06long.pdf) [1][2] in Python, based on [scikit-learn](http://scikit-learn.org).
+###### An implementation of [Caruana et al's Ensemble Selection algorithm] (http://www.cs.cornell.edu/~caruana/ctp/ct.papers/caruana.icml04.icdm06long.pdf) [1][2] in Python, based on [scikit-learn](http://scikit-learn.org).
 
-######From the abstract:
+###### From the abstract:
 
 > We present a method for constructing ensembles from libraries of thousands of models.
 Model libraries are generated using different learning algorithms and parameter settings.
@@ -23,7 +23,7 @@ __License: Simple BSD__
 Files
 -----
 
-####__ensemble.py__
+#### __ensemble.py__
 
 Containing the EnsembleSelectionClassifier object
 
@@ -43,11 +43,11 @@ a fitted ensemble from the database specified.
 
 __*(NOTE: Expects class labels to be sequential integers starting at zero [for now].)*__
     
-####__model_library.py__
+#### __model_library.py__
 
 Example model library building code.
 
-####__ensemble_train.py__
+#### __ensemble_train.py__
 
 Training utility to run ensemble selection on svm data files.
 
@@ -118,7 +118,7 @@ optional arguments:
 
 
 
-####__ensemble_predict.py__
+#### __ensemble_predict.py__
 
 Get predictions from trained EnsembleSelectionClassifier given
 svm format data file.

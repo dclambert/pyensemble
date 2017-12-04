@@ -74,7 +74,7 @@ def build_decisionTreeClassifiers(random_state=None):
         'criterion': ['gini', 'entropy'],
         'max_features': [None, 'auto', 'sqrt', 'log2'],
         'max_depth': [None, 1, 2, 5, 10],
-        'min_samples_split': [1, 2, 5, 10],
+        'min_samples_split': [2, 5, 10],
         'random_state': [rs.random_integers(100000) for i in xrange(3)],
     }
 

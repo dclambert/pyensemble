@@ -23,8 +23,9 @@ import os
 import sys
 import sqlite3
 import numpy as np
+
 from math import sqrt
-from cPickle import loads, dumps
+from pickle import loads, dumps
 from collections import Counter
 
 from sklearn.base import BaseEstimator, ClassifierMixin
@@ -193,7 +194,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
             msg = "epsilon must be >= 0.0"
             raise ValueError(msg)
 
-        metric_names = self._metrics.keys()
+        metric_names = list(self._metrics.keys())
         if (self.score_metric not in metric_names):
             msg = "score_metric not in %s" % metric_names
             raise ValueError(msg)

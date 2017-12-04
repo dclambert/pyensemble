@@ -32,7 +32,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils import check_random_state
 from sklearn.metrics import f1_score, roc_auc_score
 from sklearn.metrics import mean_squared_error, accuracy_score
-from sklearn.cross_validation import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import LabelBinarizer
 
 

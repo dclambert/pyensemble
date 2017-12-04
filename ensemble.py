@@ -300,7 +300,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
         if (self.use_bootstrap):
             n = X.shape[0]
             rs = check_random_state(self.random_state)
-            self._folds = [_bootstraps(n, rs) for _ in xrange(self.n_folds)]
+            self._folds = [_bootstraps(n, rs) for _ in range(self.n_folds)]
         else:
             self._folds = list(StratifiedKFold(y, n_folds=self.n_folds))
 
@@ -312,7 +312,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
         db_conn = sqlite3.connect(self.db_file)
         curs = db_conn.cursor()
 
-        for model_idx in xrange(self._n_models):
+        for model_idx in range(self._n_models):
 
             curs.execute(select_stmt, [model_idx])
             pickled_model = curs.fetchone()[0]
@@ -371,7 +371,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
         curs = db_conn.cursor()
 
         # build probs array using the test sets for each internal CV fold
-        for model_idx in xrange(self._n_models):
+        for model_idx in range(self._n_models):
             probs = np.zeros((len(X), self._n_classes))
 
             for fold_idx, fold in enumerate(self._folds):
@@ -586,7 +586,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
 
         # make bags and ensembles
         rs = check_random_state(self.random_state)
-        for i in xrange(self.n_bags):
+        for i in range(self.n_bags):
             # get bag_size elements at random
             cand_indices = rs.permutation(n_models)[:bag_size]
 
@@ -634,7 +634,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
 
         # average probs over each n_folds models
         probs = np.zeros((len(X), self._n_classes))
-        for fold_idx in xrange(self.n_folds):
+        for fold_idx in range(self.n_folds):
             curs.execute(select_stmt, [model_idx, fold_idx])
 
             res = curs.fetchone()

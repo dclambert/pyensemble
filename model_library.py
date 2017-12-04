@@ -4,8 +4,6 @@
 # License: Simple BSD
 """Utility module for building model library"""
 
-from __future__ import print_function
-
 import numpy as np
 
 from sklearn.svm import SVC
@@ -137,7 +135,7 @@ def build_kernPipelines(random_state=None):
     print('Building Kernel Approximation Pipelines')
 
     param_grid = {
-        'n_components': range(5, 105, 5),
+        'n_components': list(range(5, 105, 5)),
         'gamma': np.logspace(-6, 2, 9, base=2)
     }
 
@@ -155,7 +153,7 @@ def build_kmeansPipelines(random_state=None):
     print('Building KMeans-Logistic Regression Pipelines')
 
     param_grid = {
-        'n_clusters': range(5, 205, 5),
+        'n_clusters': list(range(5, 205, 5)),
         'init': ['k-means++', 'random'],
         'n_init': [1, 2, 5, 10],
         'random_state': [random_state],

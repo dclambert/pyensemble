@@ -298,12 +298,13 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
         if (self.verbose):
             sys.stderr.write('\nfitting models:\n')
 
+        n = X.shape[0]
         if (self.use_bootstrap):
-            n = X.shape[0]
             rs = check_random_state(self.random_state)
             self._folds = [_bootstraps(n, rs) for _ in range(self.n_folds)]
         else:
-            self._folds = list(StratifiedKFold(y, n_folds=self.n_folds))
+            skf = StratifiedKFold(n_splits=self.n_folds)
+            self._folds = list(skf.split(np.zeros(X.shape[0]), y))
 
         select_stmt = "select pickled_model from models where model_idx = ?"
         insert_stmt = """insert into fitted_models

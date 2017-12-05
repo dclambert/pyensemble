@@ -261,7 +261,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
             insert_stmt = """insert into models (model_idx, pickled_model)
                              values (?, ?)"""
             with db_conn:
-                vals = ((i, buffer(dumps(m))) for i, m in enumerate(models))
+                vals = ((i, memoryview(dumps(m))) for i, m in enumerate(models))
                 db_conn.executemany(insert_stmt, vals)
                 create_stmt = "create index models_index on models (model_idx)"
                 db_conn.execute(create_stmt)
@@ -280,7 +280,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
             # clumsy hack to get n_classes
             curs.execute("select probs from model_scores limit 1")
             r = curs.fetchone()
-            probs = loads(str(r[0]))
+            probs = loads(r[0])
             self._n_classes = probs.shape[1]
 
         db_conn.close()
@@ -318,7 +318,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
 
             curs.execute(select_stmt, [model_idx])
             pickled_model = curs.fetchone()[0]
-            model = loads(str(pickled_model))
+            model = loads(pickled_model)
 
             model_folds = []
 
@@ -326,7 +326,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
                 train_inds, _ = fold
                 model.fit(X[train_inds], y[train_inds])
 
-                pickled_model = buffer(dumps(model))
+                pickled_model = memoryview(dumps(model))
                 model_folds.append((model_idx, fold_idx, pickled_model))
 
             with db_conn:
@@ -381,7 +381,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
 
                 curs.execute(select_stmt, [model_idx, fold_idx])
                 res = curs.fetchone()
-                model = loads(str(res[0]))
+                model = loads(res[0])
 
                 probs[test_inds] = model.predict_proba(X[test_inds])
 
@@ -389,7 +389,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
 
             # save score and probs array
             with db_conn:
-                vals = (model_idx, score, buffer(dumps(probs)))
+                vals = (model_idx, score, memoryview(dumps(probs)))
                 db_conn.execute(insert_stmt, vals)
 
             if (self.verbose):
@@ -422,7 +422,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
 
         for row in curs.fetchall():
             model_idx, probs = row
-            probs = loads(str(probs))
+            probs = loads(probs)
             weight = ensemble[model_idx]
             ensemble_probs += probs * weight
 
@@ -443,7 +443,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
         row = curs.fetchone()
 
         n_models = float(n_models)
-        new_probs = loads(str(row[0]))
+        new_probs = loads(row[0])
         new_probs = (probs*n_models + new_probs)/(n_models + 1.0)
 
         score = self._metric(y, y_bin, new_probs)
@@ -527,7 +527,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
         curs.execute(select_stmt)
         row = curs.fetchone()
 
-        return row[0], loads(str(row[1]))
+        return row[0], loads(row[1])
 
     def best_model(self):
         """Returns best model found after CV scoring"""
@@ -640,7 +640,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
             curs.execute(select_stmt, [model_idx, fold_idx])
 
             res = curs.fetchone()
-            model = loads(str(res[0]))
+            model = loads(res[0])
 
             probs += model.predict_proba(X)/float(self.n_folds)
 

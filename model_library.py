@@ -14,7 +14,7 @@ from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.pipeline import Pipeline
-from sklearn.grid_search import ParameterGrid
+from sklearn.model_selection import ParameterGrid
 from sklearn.linear_model import SGDClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.kernel_approximation import Nystroem

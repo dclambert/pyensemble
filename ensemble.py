@@ -444,7 +444,7 @@ class EnsembleSelectionClassifier(BaseEstimator, ClassifierMixin):
 
         n_models = float(n_models)
         new_probs = loads(row[0])
-        new_probs = (probs*n_models + new_probs)/(n_models + 1.0)
+        new_probs = (probs * n_models + new_probs) / (n_models + 1.0)
 
         score = self._metric(y, y_bin, new_probs)
         return score, new_probs
